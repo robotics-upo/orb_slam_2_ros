@@ -7,6 +7,7 @@
 #include "orb_slam_2_ros/interface.hpp"
 #include "orb_slam_2_ros/interface_mono.hpp"
 #include "orb_slam_2_ros/interface_stereo.hpp"
+#include "orb_slam_2_ros/interface_rgbd.hpp"
 
 // A factory method for creating an interface
 std::unique_ptr<orb_slam_2_interface::OrbSlam2Interface> create_interface(
@@ -15,17 +16,20 @@ std::unique_ptr<orb_slam_2_interface::OrbSlam2Interface> create_interface(
   // Creating the aligner object subclass dependent on the argument
   std::unique_ptr<orb_slam_2_interface::OrbSlam2Interface> interface;
   if (interface_type == "mono") {
-    interface = std::unique_ptr<orb_slam_2_interface::OrbSlam2Interface>(
+    interface = std::unique_ptr<orb_slam_2_interface::OrbSlam2Interface>( 
         new orb_slam_2_interface::OrbSlam2InterfaceMono(nh, nh_private, visualization));
   } else if (interface_type == "stereo") {
     interface = std::unique_ptr<orb_slam_2_interface::OrbSlam2Interface>(
         new orb_slam_2_interface::OrbSlam2InterfaceStereo(nh, nh_private, visualization));
+  } else if (interface_type == "rgbd") {
+    interface = std::unique_ptr<orb_slam_2_interface::OrbSlam2Interface>(
+        new orb_slam_2_interface::OrbSlam2InterfaceRGBD(nh, nh_private, visualization));
   } else {
     ROS_FATAL(
-        "interface type not recognized. Must be mono or stereo.");
+        "interface type not recognized. Must be mono, rgbd or stereo.");
     ros::shutdown();
     exit(1);
-  }
+  } 
   // Returning a pointer to the frame aligner
   return interface;
 }
@@ -50,6 +54,6 @@ int main(int argc, char** argv) {
       create_interface(interface_type, nh, nh_private, visualization);
   // Spinning
   ros::spin();
-  // Exit tranquilly
+  // Exit quietly
   return 0;
 }

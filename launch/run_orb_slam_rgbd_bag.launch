@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Path of the file containing the ORB vocabulary. -->
+  <arg name="vocabulary_file_path"/>
+  <!-- Path of the file containing ORB SLAM2 configuration. -->
+  <arg name="orb_slam2_settings_file_path" default = "$(find orb_slam_2_ros)/config/euroc/euroc.yaml"/>
+    <!-- Path of the file containing camera calibration. -->
+  <arg name="camera_calibration_file_path" default = "$(find orb_slam_2_ros)/config/euroc/camchain.yaml"/>
+
+  # Bag filename
+  <arg name="bag_file" default="/home/chur/SIAR/Sewers_jan_17/siar_2017-01-17-11-17-28.bag"/>
+  
+  # Use simulation time fro TFs
+  <param name="use_sim_time" value="true" />
+  
+  <arg name="camera" default="/front"/>
+  <arg name="start" default="0"/>
+  <arg name="rate" default="1.0"/>
+  
+  <arg name="init_x" default="0.0"/>
+  <arg name="init_y" default="0.0"/>
+  <arg name="init_a" default="0.0"/>
+  
+  <arg name="stats_file" default="/home/chur/ResultsORBSlam/stats11_1.txt"/>
+  <arg name="ground_file" default="/home/chur/2018-06-12/input_vector_ground_truth_b.txt"/>
+  <arg name="traj_file" default="/home/chur/2018-06-12/traj.txt"/>
+  
+  <arg name="base_frame_id" default="base_link"/>
+  
+  <node name="tf_map" pkg="tf" type="static_transform_publisher" args="$(arg init_x) $(arg init_y) 0
+        $(arg init_a) 0 0 map world 10"/>
+  
+  <node name="gt" pkg="manhole_detector" type="ground_truth.py" 
+        args="$(arg camera) $(arg ground_file) $(arg stats_file) $(arg traj_file)">
+    <param name="base_frame_id" value="$(arg base_frame_id)"/>
+  </node>
+
+  # Bag file
+  <node name="bag_player" type="play" pkg="rosbag" args="$(arg bag_file) --clock -s $(arg start) -r $(arg rate) --pause"
+        output="screen" />
+  
+  <node name="republish_img" type="republish" pkg="image_transport" output="screen" args="compressed in:=/$(arg camera)/rgb/image_raw raw out:=/$(arg camera)/rgb/image_raw"/>
+  <node name="republish_depth" type="republish" pkg="image_transport" output="screen" args="compressedDepth in:=/$(arg camera)/depth_registered/image_raw raw out:=/$(arg camera)/depth_registered/image_raw"/>
+  
+  
+  <!-- ORB SLAM2 RBGD. -->
+  <node pkg="orb_slam_2_ros" name="orb_slam_2_ros_node" type="orb_slam_2_ros_node" output="screen">
+
+    <param name="interface_type" value="rgbd" />
+    <param name="child_frame_id" value="$(arg base_frame_id)"/>
+    <param name="vocabulary_file_path" value="$(arg vocabulary_file_path)"/>
+    <param name="settings_file_path" value="$(arg orb_slam2_settings_file_path)"/>
+    <param name="visualization" type="bool" value="true"/>
+    <param name="camera_name" value="$(arg camera)"/>
+
+  </node>
+
+</launch>
